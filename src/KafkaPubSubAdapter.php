@@ -5,8 +5,8 @@ namespace Superbalist\PubSub\Kafka;
 use Superbalist\PubSub\PubSubAdapterInterface;
 use Superbalist\PubSub\Utils;
 
-class KafkaPubSubAdapter implements PubSubAdapterInterface
-{
+class KafkaPubSubAdapter implements PubSubAdapterInterface {
+
     /**
      * @var \RdKafka\Producer
      */
@@ -17,12 +17,13 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface
      */
     protected $consumer;
 
+    const FLUSH_ERROR_MESSAGE = 'librdkafka unable to perform flush, messages might be lost';
+
     /**
      * @param \RdKafka\Producer $producer
      * @param \RdKafka\KafkaConsumer $consumer
      */
-    public function __construct(\RdKafka\Producer $producer, \RdKafka\KafkaConsumer $consumer)
-    {
+    public function __construct(\RdKafka\Producer $producer = null, \RdKafka\KafkaConsumer $consumer = null) {
         $this->producer = $producer;
         $this->consumer = $consumer;
     }
@@ -32,8 +33,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface
      *
      * @return \RdKafka\Producer
      */
-    public function getProducer()
-    {
+    public function getProducer() {
         return $this->producer;
     }
 
@@ -42,8 +42,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface
      *
      * @return \RdKafka\KafkaConsumer
      */
-    public function getConsumer()
-    {
+    public function getConsumer() {
         return $this->consumer;
     }
 
@@ -55,8 +54,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface
      *
      * @throws \Exception
      */
-    public function subscribe($channel, callable $handler)
-    {
+    public function subscribe($channel, callable $handler) {
         $this->consumer->subscribe([$channel]);
 
         $isSubscriptionLoopActive = true;
@@ -96,10 +94,29 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface
      * @param string $channel
      * @param mixed $message
      */
-    public function publish($channel, $message)
-    {
+    public function publish($channel, $message) {
         $topic = $this->producer->newTopic($channel);
+
         $topic->produce(RD_KAFKA_PARTITION_UA, 0, Utils::serializeMessage($message));
+
+        $this->producer->poll(0);
+
+        $this->flush();
+    }
+
+    /**
+     * librdkafka flush waits for all outstanding producer requests to be handled.
+     * It ensures messages produced properly.
+     *
+     * @param int $timeout "timeout in milliseconds"
+     * @return void
+     */
+    protected function flush(int $timeout = 10000) {
+        $result = $this->producer->flush($timeout);
+
+        if (RD_KAFKA_RESP_ERR_NO_ERROR !== $result) {
+            throw new \Exception(self::FLUSH_ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -108,10 +125,10 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface
      * @param string $channel
      * @param array $messages
      */
-    public function publishBatch($channel, array $messages)
-    {
+    public function publishBatch($channel, array $messages) {
         foreach ($messages as $message) {
             $this->publish($channel, $message);
         }
     }
+
 }
