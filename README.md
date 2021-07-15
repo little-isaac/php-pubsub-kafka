@@ -1,13 +1,13 @@
 # php-pubsub-kafka
 
-A Kafka adapter for the [php-pubsub](https://github.com/Superbalist/php-pubsub) package.
+A Kafka adapter for the [php-pubsub](https://github.com/milind/php-pubsub) package.
 
-[![Author](http://img.shields.io/badge/author-@superbalist-blue.svg?style=flat-square)](https://twitter.com/superbalist)
-[![Build Status](https://img.shields.io/travis/Superbalist/php-pubsub-kafka/master.svg?style=flat-square)](https://travis-ci.org/Superbalist/php-pubsub-kafka)
+[![Author](http://img.shields.io/badge/author-@milind-blue.svg?style=flat-square)](https://twitter.com/milind)
+[![Build Status](https://img.shields.io/travis/milind/php-pubsub-kafka/master.svg?style=flat-square)](https://travis-ci.org/milind/php-pubsub-kafka)
 [![StyleCI](https://styleci.io/repos/67255347/shield?branch=master)](https://styleci.io/repos/67255347)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Packagist Version](https://img.shields.io/packagist/v/superbalist/php-pubsub-kafka.svg?style=flat-square)](https://packagist.org/packages/superbalist/php-pubsub-kafka)
-[![Total Downloads](https://img.shields.io/packagist/dt/superbalist/php-pubsub-kafka.svg?style=flat-square)](https://packagist.org/packages/superbalist/php-pubsub-kafka)
+[![Packagist Version](https://img.shields.io/packagist/v/milind/php-pubsub-kafka.svg?style=flat-square)](https://packagist.org/packages/milind/php-pubsub-kafka)
+[![Total Downloads](https://img.shields.io/packagist/dt/milind/php-pubsub-kafka.svg?style=flat-square)](https://packagist.org/packages/milind/php-pubsub-kafka)
 
 
 ## Installation
@@ -32,7 +32,7 @@ A Kafka adapter for the [php-pubsub](https://github.com/Superbalist/php-pubsub) 
 3. Add the following to your php.ini file to enable the php-rdkafka extension
     `extension=rdkafka.so`
     
-4. `composer require superbalist/php-pubsub-kafka`
+4. `composer require milind/php-pubsub-kafka`
     
 ## Usage
 
@@ -59,7 +59,7 @@ $conf->set('queue.buffering.max.ms', 20);
 $producer = new \RdKafka\Producer($conf);
 $producer->addBrokers('127.0.0.1');
 
-$adapter = new \Superbalist\PubSub\Kafka\KafkaPubSubAdapter($producer, $consumer);
+$adapter = new \milind\PubSub\Kafka\KafkaPubSubAdapter($producer, $consumer);
 
 // consume messages
 // note: this is a blocking call

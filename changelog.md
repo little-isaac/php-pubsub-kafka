@@ -2,7 +2,7 @@
 
 ## 2.0.0 - 2017-05-18
 
-* Bump up to superbalist/php-pubsub ^2.0
+* Bump up to milind/php-pubsub ^2.0
 * Add new publishBatch method to KafkaPubSubAdapter
 
 ## 1.0.2 - 2016-09-08

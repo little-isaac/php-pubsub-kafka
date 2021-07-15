@@ -1,9 +1,9 @@
 <?php
 
-namespace Superbalist\PubSub\Kafka;
+namespace milind\PubSub\Kafka;
 
-use Superbalist\PubSub\PubSubAdapterInterface;
-use Superbalist\PubSub\Utils;
+use milind\PubSub\PubSubAdapterInterface;
+use milind\PubSub\Utils;
 
 class KafkaPubSubAdapter implements PubSubAdapterInterface {
 
@@ -15,16 +15,24 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
     /**
      * @var \RdKafka\KafkaConsumer
      */
+    protected $kafkaConsumer;
+    
+    /**
+     * @var \RdKafka\consumer
+     */
     protected $consumer;
 
     const FLUSH_ERROR_MESSAGE = 'librdkafka unable to perform flush, messages might be lost';
 
     /**
      * @param \RdKafka\Producer $producer
-     * @param \RdKafka\KafkaConsumer $consumer
+     * @param \RdKafka\KafkaConsumer $kafkaConsumer
      */
-    public function __construct(\RdKafka\Producer $producer = null, \RdKafka\KafkaConsumer $consumer = null) {
+    public function __construct(\RdKafka\Producer $producer = null, 
+            \RdKafka\KafkaConsumer $kafkaConsumer = null,
+            \RdKafka\Consumer $consumer = null) {
         $this->producer = $producer;
+        $this->kafkaConsumer = $kafkaConsumer;
         $this->consumer = $consumer;
     }
 
@@ -38,12 +46,12 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
     }
 
     /**
-     * Return the Kafka consumer.
+     * Return the Kafka kafkaConsumer.
      *
      * @return \RdKafka\KafkaConsumer
      */
-    public function getConsumer() {
-        return $this->consumer;
+    public function getKafkaConsumer() {
+        return $this->kafkaConsumer;
     }
 
     /**
@@ -55,12 +63,12 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
      * @throws \Exception
      */
     public function subscribe($channel, callable $handler) {
-        $this->consumer->subscribe([$channel]);
+        $this->kafkaConsumer->subscribe([$channel]);
 
         $isSubscriptionLoopActive = true;
 
         while ($isSubscriptionLoopActive) {
-            $message = $this->consumer->consume(120 * 1000);
+            $message = $this->kafkaConsumer->consume(120 * 1000);
 
             if ($message === null) {
                 continue;
@@ -76,7 +84,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
                         call_user_func($handler, $payload);
                     }
 
-                    $this->consumer->commitAsync($message);
+                    $this->kafkaConsumer->commitAsync($message);
 
                     break;
                 case RD_KAFKA_RESP_ERR__PARTITION_EOF:
@@ -89,15 +97,59 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
     }
 
     /**
+     * Consume a handler to a channel.
+     *
+     * @param string $channel
+     * @param callable $handler
+     *
+     * @throws \Exception
+     */
+    public function consume($channel, $partition,$topicConf, callable $handler) {
+        $topic = $this->consumer->newTopic($channel,$topicConf);
+        $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
+        
+        $isSubscriptionLoopActive = true;
+
+        while ($isSubscriptionLoopActive) {
+            $message = $topic->consume($partition,120 * 1000);
+
+            if ($message === null) {
+                continue;
+            }
+
+            switch ($message->err) {
+                case RD_KAFKA_RESP_ERR_NO_ERROR:
+                    $payload = Utils::unserializeMessagePayload($message->payload);
+
+                    if ($payload === 'unsubscribe') {
+                        $isSubscriptionLoopActive = false;
+                    } else {
+                        call_user_func($handler, $payload);
+                    }
+
+//                    $this->consumer->commitAsync($message);
+
+                    break;
+                case RD_KAFKA_RESP_ERR__PARTITION_EOF:
+                case RD_KAFKA_RESP_ERR__TIMED_OUT:
+                    break;
+                default:
+                    throw new \Exception($message->errstr(), $message->err);
+            }
+        }
+    }
+    
+    /**
      * Publish a message to a channel.
      *
      * @param string $channel
      * @param mixed $message
      */
-    public function publish($channel, $message) {
+    public function publish($channel, $message,$key) {
+        
         $topic = $this->producer->newTopic($channel);
 
-        $topic->produce(RD_KAFKA_PARTITION_UA, 0, Utils::serializeMessage($message));
+        $topic->produce($key, 0, Utils::serializeMessage($message),$key);
 
         $this->producer->poll(0);
 

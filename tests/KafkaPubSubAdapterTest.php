@@ -4,7 +4,7 @@ namespace Tests;
 
 use Mockery;
 use PHPUnit\Framework\TestCase;
-use Superbalist\PubSub\Kafka\KafkaPubSubAdapter;
+use milind\PubSub\Kafka\KafkaPubSubAdapter;
 use Tests\Mocks\MockKafkaErrorMessage;
 
 if (!extension_loaded('rdkafka')) {

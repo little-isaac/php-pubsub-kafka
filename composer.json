@@ -15,7 +15,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Superbalist\\PubSub\\Kafka\\": "src/",
+      "milind\\PubSub\\Kafka\\": "src/",
       "Tests\\": "tests/"
     }
   },
