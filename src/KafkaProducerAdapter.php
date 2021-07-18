@@ -47,9 +47,7 @@ class KafkaProducerAdapter implements PublisherAdapterInterface {
         $partition = $extraConfig['partition'] ?? RD_KAFKA_PARTITION_UA;
         $msgsFlags = $extraConfig['msgFlags'] ?? 0;
         $key = $extraConfig['key'] ?? null;
-        echo "Publishing to '$channel' - '$partition' -  '$key' \n";
         $topic->produce($partition, $msgsFlags, Utils::serializeMessage($message),$key);
-        
         
         $this->producer->poll($pollTimeout);
 

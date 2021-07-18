@@ -45,6 +45,7 @@ class KafkaHighLevelConsumerAdapter implements SubscriberAdapterInterface {
         $isSubscriptionLoopActive = true;
         while ($isSubscriptionLoopActive) {
             $message = $this->consumer->consume($consumeTimeout);
+            
             if ($message === null) {
                 continue;
             }
@@ -72,7 +73,12 @@ class KafkaHighLevelConsumerAdapter implements SubscriberAdapterInterface {
                     throw new \Exception($message->errstr(), $message->err);
             }
         }
-        $this->consumer->unsubscribe();
+        $this->unsubscribe();
     }
 
+    public function unsubscribe(){
+        $this->consumer->unsubscribe();
+        return true;
+    }
+    
 }

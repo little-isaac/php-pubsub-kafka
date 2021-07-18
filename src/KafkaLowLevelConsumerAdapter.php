@@ -13,6 +13,16 @@ class KafkaLowLevelConsumerAdapter implements SubscriberAdapterInterface {
     protected $consumer;
 
     /**
+     * @var \RdKafka\ConsumerTopic
+     */
+    protected $topic;
+    
+    /**
+     * @var Integer
+     */
+    protected $partition;
+    
+    /**
      * @param \RdKafka\Consumer $consumer
      */
     public function __construct(\RdKafka\Consumer $consumer) {
@@ -39,19 +49,19 @@ class KafkaLowLevelConsumerAdapter implements SubscriberAdapterInterface {
     public function subscribe($channel, callable $handler, $extraConf = null) {
 
         $topicConf = $extraConf['topicConf'] ?? new \RdKafka\TopicConf();
-        $partition = $extraConf['partition'] ?? RD_KAFKA_PARTITION_UA;
+        $this->partition = $extraConf['partition'] ?? RD_KAFKA_PARTITION_UA;
 
         $consumeTimeout = $extraConf['consumeTimeout'] ?? 120 * 1000;
         $isExitOnTimeout = $extraConf['isExitOnTimeout'] ?? true;
 
-        $topic = $this->consumer->newTopic($channel, $topicConf);
-        $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
+        $this->topic = $this->consumer->newTopic($channel, $topicConf);
+        $this->topic->consumeStart($this->partition, RD_KAFKA_OFFSET_STORED);
 
         $isSubscriptionLoopActive = true;
 
         while ($isSubscriptionLoopActive) {
 
-            $message = $topic->consume($partition, $consumeTimeout);
+            $message = $this->topic->consume($this->partition, $consumeTimeout);
             if ($message === null) {
                 // If message is null then it means timeout 
                 // Please check document for this.
@@ -82,7 +92,12 @@ class KafkaLowLevelConsumerAdapter implements SubscriberAdapterInterface {
                     throw new \Exception($message->errstr(), $message->err);
             }
         }
-        $topic->consumeStop($partition);
+        $this->unsubscribe();
+    }
+    
+    public function unsubscribe() {
+        $this->topic->consumeStop($this->partition);
+        return true;
     }
 
 }
