@@ -16,7 +16,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
      * @var \RdKafka\KafkaConsumer
      */
     protected $kafkaConsumer;
-    
+
     /**
      * @var \RdKafka\consumer
      */
@@ -28,9 +28,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
      * @param \RdKafka\Producer $producer
      * @param \RdKafka\KafkaConsumer $kafkaConsumer
      */
-    public function __construct(\RdKafka\Producer $producer = null, 
-            \RdKafka\KafkaConsumer $kafkaConsumer = null,
-            \RdKafka\Consumer $consumer = null) {
+    public function __construct(\RdKafka\Producer $producer = null, \RdKafka\KafkaConsumer $kafkaConsumer = null, \RdKafka\Consumer $consumer = null) {
         $this->producer = $producer;
         $this->kafkaConsumer = $kafkaConsumer;
         $this->consumer = $consumer;
@@ -62,7 +60,7 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
      *
      * @throws \Exception
      */
-    public function subscribe($channel, callable $handler) {
+    public function subscribe($channel, callable $handler, $extraConfig = null) {
         $this->kafkaConsumer->subscribe([$channel]);
 
         $isSubscriptionLoopActive = true;
@@ -104,14 +102,14 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
      *
      * @throws \Exception
      */
-    public function consume($channel, $partition,$topicConf, callable $handler) {
-        $topic = $this->consumer->newTopic($channel,$topicConf);
+    public function consume($channel, $partition, $topicConf, callable $handler, $extraConfig = null) {
+        $topic = $this->consumer->newTopic($channel, $topicConf);
         $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
-        
+
         $isSubscriptionLoopActive = true;
 
         while ($isSubscriptionLoopActive) {
-            $message = $topic->consume($partition,120 * 1000);
+            $message = $topic->consume($partition, 120 * 1000);
 
             if ($message === null) {
                 continue;
@@ -138,18 +136,18 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
             }
         }
     }
-    
+
     /**
      * Publish a message to a channel.
      *
      * @param string $channel
      * @param mixed $message
      */
-    public function publish($channel, $message,$key) {
-        
+    public function publish($channel, $message, $extraConfig = null) {
+
         $topic = $this->producer->newTopic($channel);
 
-        $topic->produce($key, 0, Utils::serializeMessage($message),$key);
+        $topic->produce(RD_KAFKA_PARTITION_UA, 0, Utils::serializeMessage($message));
 
         $this->producer->poll(0);
 
@@ -177,9 +175,9 @@ class KafkaPubSubAdapter implements PubSubAdapterInterface {
      * @param string $channel
      * @param array $messages
      */
-    public function publishBatch($channel, array $messages) {
+    public function publishBatch($channel, array $messages, $extraConfig = null) {
         foreach ($messages as $message) {
-            $this->publish($channel, $message);
+            $this->publish($channel, $message, $extraConfig);
         }
     }
 

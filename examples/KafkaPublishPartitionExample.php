@@ -16,6 +16,7 @@ $broker = 'localhost:9092';
 $conf = new \RdKafka\Conf();
 $conf->set('bootstrap.servers', $broker);
 //$conf->set('queue.buffering.max.ms', 20);
+$conf->set('enable.idempotence', 'true');
 
 $producer = new \RdKafka\Producer($conf);
 $producer->addBrokers($broker);
@@ -27,11 +28,10 @@ while (true) {
         $extraConf = [
             "pollTimeout" => 0,
             "flushTimeout" => 1000,
-//            "partition" => $x,
+            "partition" => $x,
             "msgFlags" => 0,
             "key" => $x
         ];
-        echo "Publishing to $topic - $x \n";
         $adapter->publish($topic, $x, $extraConf);
     }
 }
