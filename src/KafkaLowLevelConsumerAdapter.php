@@ -53,6 +53,7 @@ class KafkaLowLevelConsumerAdapter implements SubscriberAdapterInterface {
 
         $consumeTimeout = $extraConf['consumeTimeout'] ?? 120 * 1000;
         $isExitOnTimeout = $extraConf['isExitOnTimeout'] ?? true;
+        $isExitOnEndOfPartition = $extraConf['isExitOnEndOfPartition'] ?? false;
 
         $this->topic = $this->consumer->newTopic($channel, $topicConf);
         $this->topic->consumeStart($this->partition, RD_KAFKA_OFFSET_STORED);
@@ -83,6 +84,10 @@ class KafkaLowLevelConsumerAdapter implements SubscriberAdapterInterface {
                     }
                     break;
                 case RD_KAFKA_RESP_ERR__PARTITION_EOF:
+                    if($isExitOnEndOfPartition){
+                        $isSubscriptionLoopActive = false;
+                    }
+                    break;
                 case RD_KAFKA_RESP_ERR__TIMED_OUT:
                     if ($isExitOnTimeout) {
                         $isSubscriptionLoopActive = false;

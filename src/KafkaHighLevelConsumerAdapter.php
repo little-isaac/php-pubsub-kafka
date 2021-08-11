@@ -40,6 +40,8 @@ class KafkaHighLevelConsumerAdapter implements SubscriberAdapterInterface {
 
         $consumeTimeout = $extraConf['consumeTimeout'] ?? 120 * 1000;
         $isExitOnTimeout = $extraConf['isExitOnTimeout'] ?? true;
+        $isExitOnEndOfPartition = $extraConf['isExitOnEndOfPartition'] ?? false;
+        
         $this->consumer->subscribe([$channel]);
 
         $isSubscriptionLoopActive = true;
@@ -64,6 +66,10 @@ class KafkaHighLevelConsumerAdapter implements SubscriberAdapterInterface {
 
                     break;
                 case RD_KAFKA_RESP_ERR__PARTITION_EOF:
+                    if($isExitOnEndOfPartition){
+                        $isSubscriptionLoopActive = false;
+                    }
+                    break;
                 case RD_KAFKA_RESP_ERR__TIMED_OUT:
                     if ($isExitOnTimeout) {
                         $isSubscriptionLoopActive = false;
